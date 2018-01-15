@@ -1,0 +1,14 @@
+/usr/share/ccis-server/certs/cacert.pem
+/usr/share/ccis-server/certs/sslclientcert.pem
+/usr/share/ccis-server/certs/sslclientkey.pem
+/usr/share/ccis-server/certs/sslservercert.pem
+/usr/share/ccis-server/certs/sslserverkey.pem
+/etc/CCIS/CCISServer.conf
+/etc/rsyslog.d/30-ccisserver.conf
+/etc/logrotate.d/ccisserverlog
+/etc/CCIS/version
+/etc/CCIS/Flow.conf
+/etc/CCIS/ccis_test.jpg
+/usr/sbin/CCISServer-manager
+/etc/systemd/system/CCISServer.service
+/usr/bin/CCISServer
