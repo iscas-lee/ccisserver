@@ -1,0 +1,610 @@
+ccisserver (3.5.6.0kord~ccis2.8.2) juniper; urgency=low
+
+  * 修复：修复了一个无法删除未打印报告、无法调整查询记录的bug
+  * 调整：调整了过期报告删除时更新打印标志位的逻辑
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 20 Dec 2017 16:43:27 +0800
+ccisserver (3.5.5.3kord~ccis2.8.1) juniper; urgency=low
+
+  * 修复：修复了在回收log_node时一个严重的double free问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 18 Dec 2017 17:19:27 +0800
+ccisserver (3.5.5.2kord~ccis2.8.1) juniper; urgency=low
+
+  * 修改：Ukey自动注册修改pin码时加强数据库非空判断语句
+  * 修复了不正确的ccisserver.postinst脚本
+  * 取消30-ccisserver.conf中对imjournal模块的加载
+  * 修改：日志记录函数更换为sd_journal_send
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 15 Dec 2017 15:02:27 +0800
+ccisserver (3.5.4.2kord~ccis2.8.0) juniper; urgency=low
+
+  * 修改备份文件
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 07 Dec 2017 20:51:27 +0800
+ccisserver (3.5.4.0kord~ccis2.8.0) juniper; urgency=low
+
+  * 给转码失败的地方加上errno输出
+  * 修复ukey注册准许性判断内外不一致的问题
+  * 增加流程：CCIS_RESEND_REPORT_NOEN，允许客户端在特定情况下申请仅压缩的报告文件
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 07 Dec 2017 11:18:27 +0800
+ccisserver (3.5.3.0kord~ccis2.8.0) juniper; urgency=low
+
+  * 增加两个配置项：CROSS_DEV与CROSS_WEBSITE，当检测到用户有上次未使用的缴费金额时，将根据该配置项来决定是否能够继承使用上次未使用的金额
+  * 增加：当某次查询将之前的收费记录继承下来之后，会在comment中表明继承来源
+  * 修改：服务负责方式由init.d变为systemd
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 22 Nov 2017 16:51:27 +0800
+ccisserver (3.5.2.0kord~ccis2.8.0) juniper; urgency=low
+
+  * 修复：无法进行报告重发的bug
+  * 增加：异步线程调用函数，修改了当前程序中所有创建线程的地方成为异步调用，以修复原来存在的内存泄露问题
+  * 修改：线程相关代码，在log_node中记录与当前流程相关的线程表，在流程退出时保证所有线程先得到退出
+  * 增加&修改：数据库type21表oldpin字段更名为newpin；当设备登陆时发现regsign为1且newpin中存在数据时，会将newpin的数据携带在reseve中（跟随regsig的注册状态，并且用\0分割）明文发送给客户端，使其能够打开Ukey
+  * 增加：程序将以服务运行，并且开机自启
+  * 修改：修复日志记录多个文件的问题
+  * 增加：当用户上次有未使用的金额时，暂时取消移动支付方式，对此人此次查询仅支持纸币收费
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 17 Nov 2017 09:41:14 +0800
+ccisserver (3.5.1.0kord~ccis2.8.0) juniper; urgency=low
+
+  * 在发送报告的finish报文中的reseve字段携带压缩加密后报告的MD5值
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 03 Nov 2017 10:22:14 +0800
+ccisserver (3.5.0.0kord~ccis2.8.0) juniper; urgency=low
+
+  * 增加移动支付功能
+  * 修改当SSL_read出现SSL_ERROR_SSL这种无法处理的错误时的操作，将主动移除出现该错误的连接
+  * 修复了当自动注册配置项数据库段配置错误时会引发的段错误问题
+  * 修复了身份证信息过长的情况下会出现段错误的问题
+  * 修复自动配置脚本中一个会导致“重复登陆动作”配置项错误的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 18 Oct 2017 17:41:14 +0800
+ccisserver (3.4.5.3kord~ccis2.7.5) juniper; urgency=low
+
+  * 增加CCIS_KEEPALIVE报文，调整某些输出
+  * 调整了Channel_New()的调用，只在accept成功时才会调用，避免了新连接接入时惊群后导致的集体分配内存；增加了部分输出及异常判断
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 30 Aug 2017 10:30:44 +0800
+ccisserver (3.4.5.2kord~ccis2.7.4) juniper; urgency=low
+
+  * 修复了使用配置文件重载功能后配置文件句柄被回收而导致的自动注册段错误问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 15 Aug 2017 10:41:24 +0800
+ccisserver (3.4.5.1kord~ccis2.7.4) juniper; urgency=low
+
+  * 增加配置项：DUPLICATE_LOGIN_ACTION
+  * 修复了在身份证流程中Curl初始化失败时返回值错误的bug
+  * 增加：当客户端重复登陆时，根据配置文件决定登陆结果（目前仅在同一进程中实现了登陆状态检测，需要进一步做成共享内存在多个进程中全部禁止）
+  * 去除了在Init_Configure()函数结束处对keyFile变量的回收操作，该操作曾导致自动注册流程中由于句柄被回收而引发的空指针错误
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 07 Aug 2017 17:31:42 +0800
+ccisserver (3.4.5.0kord~ccis2.7.4) juniper; urgency=low
+
+  * 添加调试模式与重载模式
+  * 增加：在设备离线的时候，来源于该设备的查询节点也会被更新至数据库并从内存链表中移除
+  * 修改了客户端征信登陆时相关的返回错误
+  * 修复BUG：当发生客户端EPOLL_HUP的时候其对应的的令牌环不会被从内存中移除的bug
+  * 增加了SSL错误时的日志输出
+  * 修复falres记录错误的bug，并重写错误码记录部分功能，包括错误码的含义
+  * 增加了当刷身份证时出现账号密码错误时的情况处理，调整了Download_Police_Photo的返回值
+  * 增加：在初始化查询节点时赋值lastpackage变量
+  * 调整身份证核验时查询节点进入链表的条件及Check_ID_Info的返回值
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sat, 05 Aug 2017 22:09:35 +0800
+ccisserver (3.4.4.3kord~ccis2.7.4) juniper; urgency=low
+
+  * 修复了当客户端由于NAT导致来源IP相同而导致的相互影响退出状态的问题
+  * 增加CCISServer-manager功能：可以自动从旧的配置文件中同步已配置的项的内容
+  * 增加deb解包前脚本与安装后脚本，将自动备份旧配置文件并打开CCISServer-manager
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 31 Jul 2017 17:53:32 +0800
+ccisserver (3.4.4.2kord~ccis2.7.3) juniper; urgency=low
+
+  * 将密码更新状态搜索的排序条件由order by crtdate desc修改为order by changeid desc，以此避免在同一秒内出现两条记录的情况下服务器搜索不到最新需同步的记录的问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 25 Jul 2017 11:23:44 +0800
+ccisserver (3.4.4.1kord~ccis2.7.3) juniper; urgency=low
+
+  * 修复一个异常情况下的Double Free
+  * 修复身份证信息处不会回复type的问题
+  * 完善falres记录与流程控制过程
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 20 Jul 2017 10:20:44 +0800
+ccisserver (3.4.4.0kord~ccis2.7.2) juniper; urgency=low
+
+  * 修复了local_dir分配的内存大小不对的问题
+  * 修复了自检时删除照片与目录时提示不对的问题
+  * 增加了对DATA_PATH配置项的长度检测
+  * 增加配置项：AUTO_RESTART，控制服务器在每日自检时是否重启业务进程
+  * 增加配置项：LINK_TIMEOUT_S，用于控制服务器与征信网站的连接超时时间，当超时时间内没有收到征信网站回应时将返回连接失败
+  * 增加功能：每日自检时会检测内存占用情况，若增长量超过预定阈值0.3，则会忽略配置项AUTO_RESTART而强制重启
+  * 修改CCISServer-manager以适应最新配置文件
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 05 Jul 2017 16:24:15 +0800
+ccisserver (3.4.3.5kord~ccis2.7.1) juniper; urgency=high
+
+  * 调整了在客户端登陆时验证不通过主动断开连接的前提条件
+  * 调整了默认的版本兼容性配置
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 24 Jun 2017 14:51:47 +0800
+ccisserver (3.4.3.4kord~ccis2.7.1) juniper; urgency=low
+
+  * 取消账号变更时对于UkeySN的依据
+  * 修复在客户端登陆时hash解析失败后的日志输出错误的问题；提升版本为v3.4.3.4~ccis2.7.1
+  * 修复一个未打印报告无法及时删除的bug
+  * 修复CCISServer-manager中一个版本号文件检测的bug
+  * 增加功能：客户端登陆时验证不通过等各种异常情况下，服务器会主动踢除该客户端连接
+  * 同步自检程序的type.h
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 22 Jun 2017 16:26:20 +0800
+ccisserver (3.4.3.3kord~ccis2.7) juniper; urgency=low
+
+  * 现在颁发TPM证书的时候也会同时记录该证书在CA中的索引序列号了
+  * 增加配置文件中开头的注释提示，同时修复CCISServer-manager中判断换行错误的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 05 Jun 2017 15:23:12 +0800
+
+ccisserver (3.4.3.2kord~ccis2.7) juniper; urgency=low
+
+  * 增加征信帐号申请与颁发功能
+  * 修复了版本检测中的一个bug
+  * 使用密码md5值代替空值存放在org03中，用于旧密码匹配
+  * 增加功能：当网点人员手动输入帐号密码，该帐密登录成功并且信息与数据库中保存的值不一样时，会将该记录录入数据库当作一次帐号变更记录
+  * 增加功能：在首次登录时也会优先校验Ukey的绑定状态了
+  * 增加功能：在申请帐号或有密码变更后，如果客户端手动输入一个可用的帐号密码，则将以前的未同步记录的status全部调整至3,表示已放弃
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 26 May 2017 09:33:11 +0800
+ccisserver (3.4.3.1kord) juniper; urgency=low
+
+  * 使用共享内存保证执行清理工作的进程只有一个
+  * 增加定时自检时自动调整异常查询记录的功能
+  * 修改加解密函数接口文件
+  * 增加版本交换判断功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 17 May 2017 14:47:32 +0800
+ccisserver (3.4.3.0kord) juniper; urgency=low
+
+  * 修复业务维持中关于数据库查询的bug
+  * 删除Connect_To_PBC中可能造成密码泄漏的调试输出
+  * 对于所有Select操作均增加结果空指针判断，避免特定情况下的段错误问题
+  * 调整所有报告发送处理方式，统一使用Send_Report_To_Client函数完成
+  * 修复业务维持中的一些bug，同时在业务维持的回复报文中使用reseve字段附带报告类型限制，并且业务维持将会根据配置文件参数决定是否执行
+  * 删除DEBUG与TEST调试
+  * 将数据库中MAXROW调整至100
+  * 补充配置文件加载函数的判断与日志信息
+  * 完成过期报告删除与标志更新功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 16 May 2017 17:14:03 +0800
+ccisserver (3.4.2.1kord) juniper; urgency=low
+
+  * 在CCISServer-manager脚本中增加当前有效用户判断，非root用户将不可以执行
+  * 修复了报告类型选择中的一个由于运算符优先级引发的bug
+  * 对于DATA_PATH配置项在配置脚本与主程序中都增加了目录存在性与自动创建功能
+  * 删除了一些无用的变量，修复了flow_control.c未包含日志头文件的问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 27 Apr 2017 21:52:51 +0800
+ccisserver (3.4.2.0kord) juniper; urgency=low
+
+  * 修复配置检测脚本中的一个bug
+  * 增加Ukey自动注册流程中对https连接的支持
+  * 增加照片即时删除功能
+  * 在自动注册时将新获取的证书序列号替换原有的证书序列号作为绑定参数
+  * 在自动注册流程中增加update02表中type表项的插入操作
+  * 补充了自动注册流程中的日志记录信息
+  * 修复了几个自动注册中的bug
+  * 将版本号单独保存在一个新文件中，防止copy_current_config时覆盖版本号
+  * 增加对Ukey与TPM注册状态的检测，并且将检测值返回给客户端
+  * 增加报告类型选择的默认选项,支持详版时为详版，否则为简版。该改动允许服务器向下兼容到无报告类型选择的客户端版本
+  * 修复了字符串解析函数中一个内存分配的bug，该bug曾导致湖南方面部分用户刷身份证后造成服务端崩溃退出
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 26 Apr 2017 09:42:35 +0800
+ccisserver (3.4.1.4kord) juniper; urgency=low
+
+  * 完成初版的详简版报告类型选择功能
+  * 修改数据库增加新字段reptype，保存每个流程选择下载的报告类型
+  * 补充了所有流程中的异常返回值的详细状态，以便统计分析
+  * 新增宏CCIS_PATHLEN，以用作于各个保存文件路径的数组或字符串的长度限制
+  * 修改了业务维持模块搜索数据库的字段以适应最新的数据库结构
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 13 Apr 2017 21:58:05 +0800
+ccisserver (3.4.1.3kord) juniper; urgency=low
+
+  * 修复了base64加密密码时由于没有初始化输出字符串导致的乱码问题
+  * 补充了配置与检测脚本，并且修改了脚本中的一点bug
+  * 将公安部照片的可读性检测移至身份证照片比对失败之后再执行，便于在没有公安部照片的情况下也可以执行人脸比对
+  * 修复了由于错误使用拷贝函数导致的加密密码发送失败的bug
+  * 增加Ukey自动注册流程
+  * 增加TPM自动注册流程
+  * 增加配置文件项：CONSTRAIN_VERIFY，以表明公安部认证步骤是否可选
+  * 补充CCISServer-manager脚本以适应最新配置文件
+  * 修复若干BUG
+  * 数据库更新，应当使用最新版数据库
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 12 Apr 2017 08:46:37 +0800
+ccisserver (3.4.1.2kord) juniper; urgency=low
+
+  * 将密码更新时保存进数据库中的密码改成base64编码后的模式，在客户端需要更新时取出，base64解码完成后再用客户端公钥加密发送
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 29 Mar 2017 21:43:51 +0800
+ccisserver (3.4.1.1kord) juniper; urgency=low
+
+  * 修复了简报报告情况下报告号获取错误的问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 29 Mar 2017 15:52:11 +0800
+ccisserver (3.4.1.0kord) juniper; urgency=low
+
+  * 增加密码到期自动修改功能
+  * 修复了由于q_ret可能为NULL的情况下尝试获取q_ret->ptr时导致的段错误问题
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 28 Mar 2017 17:58:24 +0800
+ccisserver (3.4.0.2kord) juniper; urgency=low
+
+  * 业务结构体修改，允许服务器下载简版报告，上传部分功能也同步支持
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 27 Mar 2017 08:34:09 +0800
+ccisserver (3.4.0.1kord) juniper; urgency=low
+
+  * 修复了日志中不会输出时间同步操作结果的问题
+  * 修复了历史遗留下来对于数据库查询操作后存在已久的UAF漏洞
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 22 Mar 2017 14:43:42 +0800
+ccisserver (3.4.0kord) juniper; urgency=low
+
+  * 针对Ukey注册配置项做了一些修改
+  * 将自身的配置文件修改为更具独特性的文件名称，防止重复
+  * 针对调试用途，增加了CALLTRACER宏
+  * 补充了安装配置脚本，使其能够针对服务器修改与新增的部分进行检测
+  * 现在在数据库中会统计qnum字段了
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 20 Mar 2017 22:09:09 +0800
+ccisserver (3.3.9kord) juniper; urgency=low
+
+  * 修复在特定情况下未打印报告记录不会更新，本地报告文件也不会被删除的bug
+  * 调整了针对公安部照片与身份证照片统计使用次数的计数位置，现在的计数将更加精确
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 17 Mar 2017 18:57:39 +0800
+ccisserver (3.3.8kord) juniper; urgency=low
+
+  * 增加Ukey自动注册流程
+  * 修改网络交互报文，增加reseve字段，用来传输额外的小型数据，该服务器版本必须对应客户端2.4.0及以后的版本使用
+  * 修复了Ukey已被绑定的情况下，再次绑定在别的机器上不会报错的bug
+  * 针对每一个配置项，现在有了更详细的判断，用户输入不合法的自动纠正与报错机制
+  * 增加每个流程中比对次数的统计情况，需要配合3/16日之后的数据库
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 16 Mar 2017 19:53:58 +0800
+ccisserver (3.3.7kord) juniper; urgency=low
+
+  * 增加客户端登陆登出操作记录数据库功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 09 Mar 2017 17:28:31 +0800
+ccisserver (3.3.6kord) juniper; urgency=low
+
+  * 修复了两处数据库操作时缺少单引号的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 27 Feb 2017 11:26:00 +0800
+ccisserver (3.3.5kord) juniper; urgency=low
+
+  * 首次配置时如果Ukey与TPM绑定失败，系统会回滚数据库中记录的对应的系统和硬件信息
+  * 调整DEVSN_LEN为12字节长度
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 24 Feb 2017 10:31:54 +0800
+ccisserver (3.3.4kord) juniper; urgency=low
+
+  * 修复首次启动时绑定TPM与Ukey失败时仍旧返回成功的BUG
+  * 配置文件读取时增加对非法参数的自动校验
+  * 身份证信息中地址长度增加至300字节，可记录约100个汉字，超长将被截断
+  * 程序启动测试照片处理时增加提取可见光步骤
+  * 为上传功能增加上次收费记录、冲借记录与本次实收金额
+  * 上传功能中设备名称采用数据库dev02表中devname字段，该字段需要在数据库中预置
+  * 数据库修改为2017/02/23日版本
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 23 Feb 2017 10:26:13 +0800
+ccisserver (3.3.3kord) juniper; urgency=low
+
+  * 修复身份证解密处一个bug，曾经使用strlen去计算密文长度导致长度不对
+  * 修复刷身份证后如果身份证验证失败的情况下，log_node会常驻内存并且无法自动上传的bug
+  * 使用org01表中orgname字段当做上传代码中征信机构名称标识符，该字段应该设置为NOT NULL
+  * 暂时使用devsn作为上传代码中的设备名称使用，无法输入中文
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 21 Feb 2017 16:03:13 +0800
+ccisserver (3.3.2kord) juniper; urgency=low
+
+  * 自动上传功能修改为非代理也可以上传
+  * 完善了自动上传功能
+  * 照片入库操作修改为强制入库，不可配置
+  * 本地照片文件在每日自检时会被删除
+  * 报告文件不再存入数据库，且除了未打印报告外，其他报告均会实时删除（在存在未打印报告的情况下，如果用户选择了下载新报告也会删除未打印报告）
+  * 新增type类型，提供了对时操作
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 20 Feb 2017 17:58:09 +0800
+ccisserver (3.3.1kord) juniper; urgency=low
+
+  * 本地文件存储路径改为可由配置文件指定，同时更新了配置脚本适应新的配置文件
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sat, 18 Feb 2017 17:58:09 +0800
+ccisserver (3.3.0kord) juniper; urgency=low
+
+  * 修复了自动检测与配置脚本中的一些bug
+  * 在首次开机登陆和日常开机登陆时增加了对Orgid的判断，若尚未在数据库登记，那么会拒绝后续流程
+  * 修复了假如数据库中某台机器硬件hash未登记成功，即有该机器记录但是hash为NULL的情况下，服务器可能引发段错误的bug
+  * 修复了日志中无法输出pid的bug
+  * 修复了偶尔出现的报告转码失败的问题
+  * 数据库修改为2月16日新版本
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 16 Feb 2017 21:53:29 +0800
+ccisserver (3.2.9kord) juniper; urgency=low
+
+  * 更新日志输出，日志分析更加清晰
+  * script目录中增加服务器自动检测与配置脚本
+  * 数据库更新，应采用2017-02-09日之后的数据库
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 10 Feb 2017 15:38:32 +0800
+ccisserver (3.2.8kord) juniper; urgency=low
+
+  * 服务器启动初始化过程增加人脸识别模型预建立操作，防止在业务流程中由于模型预建立时间过长导致的服务器无响应
+  * 与数据库的字符集交互代码中由utf8字符集修改为utf8mb4字符集
+  * 增加照片/报告入库可选开关
+  * 服务器启动时增加当前配置输出
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 07 Feb 2017 16:12:21 +0800
+ccisserver (3.2.7kord) juniper; urgency=low
+
+  * 修改了Ukey与TPM绑定的时机，避免了客户端写回Ukey失败的情况下出现的Ukey已绑定的情况
+  * 修改了保存报告时的方式，由文本流数据修改为二进制流读取
+  * 修复了身份证验证时错误提示与实际不符的BUG
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sun, 22 Jan 2017 17:14:57 +0800
+ccisserver (3.2.6kord) juniper; urgency=low
+
+  * 增加数据库端口配置
+  * 修复了客户端hash比对的过程中一个内存分配参数错误的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 18 Jan 2017 17:24:27 +0800
+ccisserver (3.2.5kord) juniper; urgency=low
+
+  * 应更新升级模块要求，取消客户端登陆时对软件hash的校验。
+  * 更改数据库结构，该版本以后的数据库应采用2017-01-17日之后的数据库
+  * 增加图片入库操作，数据库表中将会同时保存照片文件路径及照片文件本身
+  * 增加报告入库操作，数据库表中将会同时保存报告文件路径及报告文件本身
+  * 收费金额继承时，被继承的记录将会表明继承者是哪条记录
+  * 时间同步操作交由线程执行，假如时间服务器无回应，也不会影响到主程序的初始化及服务功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 17 Jan 2017 20:41:42 +0800
+ccisserver (3.2.4kord) juniper; urgency=low
+
+  * 新增检测项：当程序启动时无法连接到数据库，那么程序将不会继续执行
+  * 新增检测项：当子进程由于资源初始化失败从而退出时，父进程将终止报出警告并且不会重新拉起该子进程
+  * 新增关联项：当父进程退出时，所有子进程将收到信号并且执行退出操作，避免孤儿进程的出现
+  * 增加部分日志输出信息
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 13 Jan 2017 15:13:10 +0800
+ccisserver (3.2.3kord) juniper; urgency=low
+
+  * 修复了用户点击管理员已退钱的选项后，数据库中没有将chgnum收费金额清零的bug
+  * 新增一项流程：Send_NewReport.charge=40，使下载新报告的时候假如金额足够就可以允许直接下载收费报告
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 10 Jan 2017 14:07:52 +0800
+ccisserver (3.2.2kord) juniper; urgency=low
+
+  * 修复了当出现“找不到连接节点”时可能会引发的空指针错误
+  * 修改了querysgn的含义，0表示查询未结束，1表示报告尚未下载但是用户选择了结束，2表示报告已下载成功
+  * 在退费操作处增加了新的判断，当服务器已从征信下载到报告后，将不会允许用户退费
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 06 Jan 2017 16:47:43 +0800
+ccisserver (3.2.0kord) juniper; urgency=low
+
+  * 修改pbc.c文件，在获取报告号及收费编号的时候修改了其字符串的赋值长度，固定为(22,23)定长
+  * 修改了业务维持模块的部分逻辑，待测试
+  * 修复了用户主动点击返回时再次刷身份证会被认为有未完成流程的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 05 Jan 2017 15:33:11 +0800
+ccisserver (3.1.9kord) juniper; urgency=low
+
+  * 合成北京测试通过的自动上传代码，同时修改了三张照片的命名方式
+  * 新增一项流程：当上次缴费金额已有10元时服务器会将已收10元的记录返回给客户端，这个时候客户端将直接提交下载收费报告的请求，因此新增Receive_PhoneNumber.charge=40
+  * 修改金额数判断，当收费大于10元时一律认为只收入10元。（预防网络波动的情况下客户端多次发送已缴费的信息导致金额不对）
+  * 新增Ukey与TPM绑定功能，并且在正常登陆时会校验TPM与UKey的绑定关系
+  * 将repno与chgno的长度改回25位，经北京方面咨询，已确定repno的最大长度为22位，chgno的最大长度为23位。尚未对这两个编号做数组越界检测处理，故假如解析报告时出错，产生了过长的编号的话仍旧会覆盖后面的变量。
+  * 修复了在更新硬件SN时发送UkeyPIN码不加密的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 30 Dec 2016 19:54:12 +0800
+ccisserver (3.1.8kord) juniper; urgency=low
+
+  * 将自检时的退出机制修改为exit退出，防止在销毁EPOLL池时其他进程在核心fd上报出EPOLLHUP事件
+  * 修复了多个报文发送过程中type不对的情况
+  * 修复了选择重新配置时候报出的客户端未通过认证的bug
+  * 调整了Business_Done函数的调用顺序及querysgn赋值位置，修复了自动上传时乱码的问题
+  * 修复了在收费时收入5元后点退钱操作时返回流程非法的bug
+  * 修改了querysgn的含义，查询报告成功的情况下为1，其余情况下为0；同时修复了实时自检时querysgn在数据库中可能为NULL的bug
+  * 将默认的业务维持时间由5秒改为10秒
+  * 修改报告号及收费编号数组最大长度为55位，以防数组越界。待确定具体最大长度以后再改为合适的长度。
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 29 Dec 2016 16:30:26 +0800
+ccisserver (3.1.7kord) juniper; urgency=low
+
+  * 修改了收费时检测上一次收费情况的方式，增加了查询条件chgnum<>'0'，并且在搜索到对应信息的时候对于更新comment字段会先判断该字段中是否已经存在retreated了
+  * 网络报文中增加了控制type标识符，在业务维持的情况下该标识符置1，其余情况置0
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 27 Dec 2016 15:05:26 +0800
+ccisserver (3.1.6kord) juniper; urgency=low
+
+  * 添加了征信代理系统自动上传查询信息的代码
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 26 Dec 2016 17:38:26 +0800
+ccisserver (3.1.5kord) juniper; urgency=low
+
+  * 修改了SSL握手时证书验证不通过的处理方式，证书验证不通过时服务器将会断开连接，防止反复触发握手事件
+  * 增加了对EPOLLHUP事件的处理，当出现该事件时，服务器将认为客户端异常断开，会将与其对应的监听事件移除出EPOLL池，并且关闭socket
+  * 添加了日志每日转储功能
+  * 日志现在会显示严重级别了
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 23 Dec 2016 17:45:52 +0800
+ccisserver (3.1.4kord) juniper; urgency=low
+
+  * 补充了部分日志内容
+  * 修改了数据库连接的方式，采用了SSL连接，在连接创建前会设置本地SSL环境
+  * 添加了Ukey证书提交至CA认证的功能，该功能同样受到CA_ENABLE配置项影响
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 21 Dec 2016 14:07:52 +0800
+ccisserver (3.1.3kord) juniper; urgency=low
+
+  * 修改了回包规则，在查询序列号存在的情况下，每个回给客户端的报文都会携带当前序列号了
+  * 补充了程序退出时资源回收的代码
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 21 Dec 2016 14:34:26 +0800
+ccisserver (3.1.2kord) juniper; urgency=low
+
+  * 日志基本添加完成
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 20 Dec 2016 16:13:03 +0800
+ccisserver (3.1.1kord) juniper; urgency=low
+
+  * 修改pbc.c文件，启用了cookie文件
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 19 Dec 2016 11:00:03 +0800
+ccisserver (3.1.0kord) juniper; urgency=low
+
+  * 开放征信业务
+  * 收费流程已完成
+  * 退币操作已完成
+  * 暂未加入日志功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sun, 18 Dec 2016 17:47:03 +0800
+ccisserver (3.0.0kord) juniper; urgency=low
+
+  * 2.0初始版本，屏蔽征信相关功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 28 Oct 2016 08:42:03 +0800
+ccisserver (2.2.3kord) juniper; urgency=low
+
+  * 修复几个小bug，暂定版本
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 28 Oct 2016 08:42:03 +0800
+ccisserver (2.2.2kord) juniper; urgency=low
+
+  * 新增允许客户端更新自身软硬件信息的功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 21 Oct 2016 16:47:03 +0800
+ccisserver (2.2.1kord) juniper; urgency=low
+
+  * 添加了基于lz4算法的征信报告压缩功能
+  * 添加了通过CA验证用户Ukey的功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 20 Oct 2016 18:10:03 +0800
+ccisserver (2.2kord) juniper; urgency=low
+
+  * 移除了设备Ukey相关代码
+  * 合成了使用OpenCA进行客户端证书认证的代码（需替换服务端的三个根证书）
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 17 Oct 2016 11:33:03 +0800
+ccisserver (2.1.4kord) juniper; urgency=low
+
+  * 修改了用户现场照片及身份证照片的保存方式，使用身份证号+查询序列号的方式保存，避免冲突覆盖。
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sat, 08 Oct 2016 17:54:03 +0800
+ccisserver (2.1.3kord) juniper; urgency=low
+
+  * 修改了配置文件宏会出现内存泄露的漏洞，现在采用全局变量的方式初始化这些配置文件项了。
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 19 Sep 2016 10:20:03 +0800
+ccisserver (2.1.2kord) juniper; urgency=low
+
+  * 增加允许客户端请求重新发送报告的接口，但仅限重发一次
+  * 增加征信报告名称加密存放的功能，但是暂时注释掉未启用
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sun, 18 Sep 2016 18:00:03 +0800
+ccisserver (2.1.1kord) juniper; urgency=low
+
+  * 新增与征信网络连接失败时自动尝试重连的功能，提高网络容错性
+  * 将每日定时自检提至实时自检，保证数据库的实时性和完整性
+  * 增加征信报告MD5校验功能，保证发送给客户端的报告完整性，但是暂未增加校验不通过时重发的接口
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 13 Sep 2016 16:14:03 +0800
+ccisserver (2.1kord) juniper; urgency=low
+
+  * 新增服务端流程控制功能，客户端现在没法跳过某个流程继续了
+  * 启用falres字段，针对于每个流程的错误都有详细的记录了
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Mon, 12 Sep 2016 10:20:03 +0800
+ccisserver (2.0kord) juniper; urgency=low
+
+  * 修复了部分内存泄漏与数据库连接池未放回的bug，详见grep 0905
+  * 修改了征信报告打印标志，现在初始化为0,并且如果数据库更新是由自检触发的话该标志也会置0，现在0表示未打印，无论是失败还是流程未到。更改了搜索上次未打印报告的方式，新增两个对于repno的判断条件。
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 05 Sep 2016 13:01:03 +0800
+ccisserver (1.9kord) juniper; urgency=low
+
+  * 修改了与征信系统联网过程中SESSIONID保持的相关代码
+  * 在发送征信报告的流程中，发送结束的标志位现在会保证一定发送成功了
+  * 增加查询完报告后登出功能
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 01 Sep 2016 13:01:03 +0800
+ccisserver (1.8kord) juniper; urgency=low
+
+  * 移除了ukeysn.txt，改为从数据库中读取devkeysn
+  * 添加了苏州征信服务相关代码
+  * 修复了更新系统信息时管理员ukey验证不通过时返回报文类别提示错误的bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Sat, 27 Aug 2016 14:42:03 +0800
+ccisserver (1.7kord) juniper; urgency=low
+
+  * 双Ukey认证功能添加进了流程中
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 25 Aug 2016 19:35:03 +0800
+ccisserver (1.6kord) juniper; urgency=low
+
+  * 修复了部分BUG
+  * 新增了双Ukey认证的功能接口
+  * 新增了记录系统信息错误时的回滚操作
+  * 新增了允许客户端重新修改系统信息的type
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Wed, 24 Aug 2016 17:34:03 +0800
+ccisserver (1.5kord) juniper; urgency=low
+
+  * 修复了由于虚拟定时器可能引发的SIGVTALRM信号异常
+  * 修复了少量其余的bug
+  * 增加了日志纪录项
+  * 移除了部分可能更改流程的调试代码
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Tue, 23 Aug 2016 11:15:03 +0800
+ccisserver (1.4kord) juniper; urgency=low
+
+  * 修复了人脸比对中一个重大bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 19 Aug 2016 15:27:03 +0800
+cisserver (1.4kord) juniper; urgency=low
+
+  * 添加了每日自动扫描查询链表并更新数据库的功能
+  * 修改代码以适应最新数据库
+  * 新增了3条配置文件项
+  * 修复了一些小bug
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 19 Aug 2016 11:00:03 +0800
+ccisserver (1.3kord) juniper; urgency=low
+
+  * Initial release.
+  * 补充了大部分错误流程的日志记录
+  * 添加了声明页面的存活性检测
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Fri, 12 Aug 2016 13:36:03 +0800
+
+ccisserver (1.2kord) juniper; urgency=low
+
+  * Add log module
+
+ -- Debaucher <liuyunhe@kylinos.cn>  Thu, 11 Aug 2016 18:42:03 +0800
+
+ccisserver (1.1kord) juniper; urgency=low
+
+  * Fixed some bugs about ukeysn.txt;
+  * 修改了征信报告下载的部分，在下载报告的3种情况下，均会再次检测ukeysn是否被登记在了当前的Ukey_List中，不存在则拒绝发送报告;
+
+ -- Kobe Lee (kylinkobe) <kobe24_lixiang@126.com>  Thu, 26 May 2016 08:34:28 +0800
+
+ccisserver (1.0kord) juniper; urgency=low
+
+  * Initial release.
+
+ -- Kobe Lee (kylinkobe) <kobe24_lixiang@126.com>  Thu, 26 May 2016 08:34:28 +0800

@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -r ../bin/* ../CMakeFiles ../CMakeCache.txt ../cmake_install.cmake ../Makefile ../install_manifest.txt ../src/cmake_install.cmake ../src/Makefile ../src/CMakeFiles > /dev/null 2>&1

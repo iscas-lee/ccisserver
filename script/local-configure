@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cp ../build-conf/CMakeList.txt-for-local ../CMakeLists.txt
+cp ../build-conf/control-for-local ../debian/control
+cp ../build-conf/srcCMakeList.txt-for-local ../src/CMakeLists.txt

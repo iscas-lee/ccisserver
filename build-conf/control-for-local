@@ -1,0 +1,25 @@
+Source: ccisserver
+Section: x11
+Priority: optional
+Maintainer: Kylin Team <ubuntukylin-members@list.launchpad.net>
+Build-Depends: debhelper (>= 9),
+               libglib2.0-dev,
+               cmake,
+               libmysqlclient-dev,
+               libssl-dev,
+               libcups2-dev,
+               libcurl4-openssl-dev,
+               liblz4-dev,
+               libtspi-dev,
+               libsystemd-dev,
+               htmlstreamparser,
+Standards-Version: 3.9.5
+Homepage: https://launchpad.net/credit-inquiry
+
+Package: ccisserver
+Architecture: amd64
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         htmlstreamparser,
+Description: ccis server for bank
+ A simple tool for searching credit inquiry.

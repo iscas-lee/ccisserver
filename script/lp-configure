@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cp ../build-conf/CMakeList.txt-for-lp ../CMakeLists.txt
+cp ../build-conf/control-for-lp ../debian/control
+cp ../build-conf/srcCMakeList.txt-for-lp ../src/CMakeLists.txt

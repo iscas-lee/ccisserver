@@ -1,0 +1,11 @@
+#!/bin/bash
+
+OLDCFILE="/etc/CCIS/CCISServer.conf"
+BAKCFILE="/etc/CCIS/CCISServer.conf.old"
+
+if [ -f $OLDCFILE ];then
+	cp $OLDCFILE $BAKCFILE
+	if [ $? -eq 0 ];then
+		echo "旧版配置文件已保存为${BAKCFILE}..."
+	fi
+fi

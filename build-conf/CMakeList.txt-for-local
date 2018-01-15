@@ -1,0 +1,29 @@
+# Authors:
+# *  Kobe Lee    lixiang@kylinos.cn/kobe24_lixiang@126.com
+
+project (CCISServer)
+cmake_minimum_required(VERSION 2.8.9)
+
+set (PROJECT_NAME "CCISServer")
+set (CMAKE_C_FLAGS "-g -O0 ${CMAKE_C_FLAGS} ${HARDENED_C_FLAGS} -std=gnu11 -Wall -UDEBUG -UTEST -DCALLTRACE")
+
+# subdirs
+add_subdirectory(src)
+
+file(GLOB _certfiles "${CMAKE_CURRENT_SOURCE_DIR}/res/certs/*")
+install(FILES ${_certfiles} DESTINATION /usr/share/ccis-server/certs/)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libFaceMatcherDll.so DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libfdreadimage.so DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libhtmlstreamparser.so DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libhtmlstreamparser.so.0 DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libhtmlstreamparser.so.0.0.0 DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/configure/CCISServer.conf DESTINATION /etc/CCIS)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/log/30-ccisserver.conf DESTINATION /etc/rsyslog.d/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/log/ccisserverlog DESTINATION /etc/logrotate.d/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/version DESTINATION /etc/CCIS/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/schedule/Flow.conf DESTINATION /etc/CCIS/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/libshuttle_p11v220.so.1.0.0 DESTINATION /usr/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/camera/ccis_test.jpg DESTINATION /etc/CCIS/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/script/CCISServer-manager DESTINATION /usr/sbin/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/script/CCISServer.service DESTINATION /etc/systemd/system/)

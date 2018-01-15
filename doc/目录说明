@@ -1,0 +1,24 @@
+    C语言个人征信自主查询系统（C Language Credit Inquery System）,包括客户端（CCISClient）和服务端(CCISServer)目录结构如下：
+1.工程主目录如下：
+	src：存放所有的源代码，包括.h文件和.c文件
+	build：存放所有的工程文件(solution，project，makefile等） 
+	debian：升级源，一般为二进制打包文件
+	doc：项目文档，doxygen文件，COPYRIGHT，README等 
+	lib：工程依赖的所有导入库或者静态库（包括第三方库和自己的项目） 
+	out：编译器产生的中间文件.out和目标文件.o 
+	bin：编译得到的可执行文件 
+	res：资源目录，可执行文件需要用到的各种图像，声音，模型，场景，UI等资源文件（替换现在的gui） 
+	script：存放python处理脚本、数据库脚本等文件
+	log：存放日志文件
+    card文件放到src下的id-card，删除debian.
+2.src存放所有源代码，按功能模块划分，目录结构如下：
+	camera：摄像头模块，包括人脸识别算法等；
+	certificate：证书产生及认证模块；
+	charge：收费/纸币器模块；
+	credit-report：个人征信报告查询及打印模块；
+        id-card：身份证读卡器模块；
+        main-process：主处理流程模块，包括开机处理，客户端与服务端的交互的处理等；
+	monitor：监控模块；
+        nciic：联网核查公民身份信息系统模块；
+        upgrade：升级模块；
+        util：工具类模块，包括经常调用的函数，通用代码等。

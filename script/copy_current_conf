@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cp /usr/share/ccis-server/certs/* ../res/certs/
+cp /etc/CCIS/CCISServer.conf ../src/configure/

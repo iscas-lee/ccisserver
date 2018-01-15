@@ -1,0 +1,18 @@
+#!/bin/bash
+
+CONFSCRIPT="/usr/sbin/CCISServer-manager"
+SERVERSCRIPT="/etc/systemd/system/CCISServer.service"
+
+if [ -f $CONFSCRIPT ];then
+	chmod +x /usr/sbin/CCISServer-manager
+	CCISServer-manager
+else
+	echo "找不到配置脚本${CONFSCRIPT}，无法进行程序配置！"
+fi
+
+if [ ! -f ${SERVERSCRIPT} ];then
+	echo "错误：服务启动文件${SERVERSCRIPT}丢失！"
+	exit 0
+fi
+
+systemctl daemon-reload

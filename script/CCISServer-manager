@@ -1,0 +1,981 @@
+#!/bin/bash
+#############################################################
+#                         Debaucher                         #
+#############################################################
+ExeFile="/usr/bin/CCISServer"
+VerFile="/etc/CCIS/version"
+ResDir="/root/CCISServer/res"
+FaceMatchDir="/root/CCISServer/res/FaceMatcherSDK2.8"
+FaceMatchTgz="/home/kylin/CCIS/FaceMatcherSDK2.8.tgz"
+FMLib1="/usr/lib/libFaceMatcherDll.so"
+FMLib2="/usr/lib/libfdreadimage.so"
+UKLib="/usr/lib/libshuttle_p11v220.so.1.0.0"
+UKRLib="/usr/lib/libhtmlstreamparser.so"
+ConfDir="/etc/CCIS"
+ServerConfFile="/etc/CCIS/CCISServer.conf"
+FlowConfFile="/etc/CCIS/Flow.conf"
+TestImage="/etc/CCIS/ccis_test.jpg"
+RsyslogConf="/etc/rsyslog.d/30-ccisserver.conf"
+LogStoreConf="/etc/logrotate.d/ccisserverlog"
+LogFile="/var/log/ccisserver.log"
+DEFAULT_CACERT="/usr/share/ccis-server/certs/cacert.pem"
+DEFAULT_SERVERCERT="/usr/share/ccis-server/certs/sslservercert.pem"
+DEFAULT_SERVERPK="/usr/share/ccis-server/certs/sslserverkey.pem"
+
+if [ `id | awk -F '=' '{print $2}' | awk -F '(' '{print $1}'` -ne 0 ];then
+	echo "该脚本不可以以普通用户权限执行！"
+	exit
+fi
+
+echo "服务器安装自检程序正在运行..."
+
+#检测可执行文件
+echo -e "正在检测可执行文件............\c"
+if [ ! -x "$ExeFile" ];then
+	echo "可执行文件缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+#检测服务器版本文件
+echo -e "正在检测版本号文件.............\c"
+if [ ! -f "$VerFile" ];then
+	echo "版本号文件缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+#检测人脸识别库
+echo -e "正在检测人脸识别模型库..............\c"
+if [ ! -d "$FaceMatchDir" ];then
+	echo "缺失！正在尝试从默认路径解压..."
+	while [ ! -f "$FaceMatchTgz" ];do
+		echo -e "压缩文件未找到！请手动输入压缩文件路径：\c"
+		read FaceMatchTgz
+	done
+	if [ ! -d "$ResDir" ];then
+		mkdir -p $ResDir
+		if [ `echo $?` -ne 0 ];then
+			echo "无法创建 $ResDir 目录！请手动执行操作！"
+			exit
+		fi
+	fi
+	tar -xzf $FaceMatchTgz -C "$ResDir"
+	if [ `echo $?` -ne 0 ];then
+		echo "解压失败！请手动执行操作！"
+		exit
+	fi
+	echo -e "解压成功！正在重新检测人脸识别模型库.......\c"
+	if [ ! -d "$FaceMatchDir" ];then
+		echo "缺失！请检测系统状态！"
+		exit
+	fi
+fi
+echo "完成"
+
+#检测动态链接库
+echo -e "正在检测人脸识别链接库............\c"
+if [ ! -f "$FMLib1" ];then
+	echo "缺失！请联系管理员！"
+	exit
+elif [ ! -f "$FMLib2" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+echo -e "正在检测安全链接库...........\c"
+if [ ! -f "$UKLib" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+echo -e "正在检测HTML解析库............\c"
+if [ ! -f "$UKRLib" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+#检测两个应用配置文件和示例图片
+echo -e "正在检测配置文件目录............\c"
+if [ ! -d "$ConfDir" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+echo -e "正在检测应用配置文件............\c"
+if [ ! -f "$ServerConfFile" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+echo -e "正在检测流程控制图............\c"
+if [ ! -f "$FlowConfFile" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+echo -e "正在检测示例图片...........\c"
+if [ ! -f "$TestImage" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+#检测两个日志配置文件和日志输出文件
+echo -e "正在检测日志配置文件.............\c"
+if [ ! -f "$RsyslogConf" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+
+echo -e "正在检测日志转储配置文件..........\c"
+if [ ! -f "$LogStoreConf" ];then
+	echo "缺失！请联系管理员！"
+	exit
+fi
+echo "完成"
+echo -e "正在检测日志文件............\c"
+if [ ! -f "$LogFile" ];then
+	echo "缺失！"
+	echo -e "正在创建日志文件............\c"
+	touch $LogFile
+	if [ `echo $?` -ne 0 ];then
+		echo "失败！请手动执行操作！"
+		exit
+	fi
+	chown syslog:syslog $LogFile
+	chmod 666 $LogFile
+	if [ `echo $?` -ne 0 ];then
+		echo "权限分配失败！请手动执行操作！"
+		exit
+	fi
+fi
+echo "完成"
+echo -e "正在重启日志服务...............\c"
+service rsyslog restart
+if [ `echo $?` -ne 0 ];then
+	echo "失败！请手动执行操作！"
+	exit
+fi
+echo "成功"
+
+#检测证书文件
+CertFlag=0
+echo -e "正在检测默认根证书..................\c"
+if [ ! -f "$DEFAULT_CACERT" ];then
+	echo "缺失"
+	let CertFlag=1
+fi
+echo "正常"
+echo -e "正在检测默认服务器证书..............\c"
+if [ ! -f "$DEFAULT_SERVERCERT" ];then
+	echo "缺失"
+	let CertFlag=1
+fi
+echo "正常"
+echo -e "正在检测默认服务器私钥.................\c"
+if [ ! -f "$DEFAULT_SERVERPK" ];then
+	echo "缺失"
+	let CertFlag=1
+fi
+echo "正常"
+
+if [ $CertFlag -ne 0 ];then
+	echo "警告：服务器证书配置尚未完成，请联系管理员解决，也可以在稍后的配置中指定证书路径"
+fi
+
+#检测依赖包
+DependsPackage=("libmysqlclient-dev" "libglib2.0-dev" "htmlstreamparser" "libssl-dev" "libcups2-dev" "libcurl4-openssl-dev" "liblz4-dev" "libtspi-dev" "libsystemd-dev" "libukey" "face-match-server")
+PackagesNum=${#DependsPackage[@]}
+MissingNum=0
+MissingPackage=
+
+echo "开始检测服务依赖包.............."
+
+for index in $(seq $PackagesNum);do
+	echo -e "正在检测${DependsPackage[index - 1]}......\c"
+	dpkg -l ${DependsPackage[index - 1]} > /dev/null 2>&1
+	if [ `echo $?` -ne 0 ];then
+		echo "缺失"
+		MissingNum=`expr $MissingNum + 1`
+		MissingPackage="${MissingPackage} ${DependsPackage[index - 1]}"
+	else
+		echo "已安装"
+	fi
+done
+if [ $MissingNum -ne 0 ];then
+	echo "以下依赖包缺失，请联系管理员处理"
+	echo $MissingPackage
+fi
+
+EN_CURL=
+
+echo "服务器自检程序完成，即将进入首次配置模式....."
+PROCESSNUM=
+AUTO_RESTART=
+LINK_TIMEOUT=
+DATA_PATH=
+SERVERPORT=
+
+MYSQL_IP=
+MYSQL_PORT=
+MYSQL_USER=
+MYSQL_PASSWD=
+MYSQL_DB=
+SSL_CONNECT=
+STORE_FILES=
+
+CACERT=
+SERVERCERT=
+SERVERPK=
+CAHOST=
+DUPLICATE_LOGIN_ACTION=
+
+ZX_NORMAL_URL=
+ZX_AGENT_URL=
+ZX_AGENT_SIGN=
+AUTO_UPLOAD=
+PIC_UPLOAD_URL=
+LOG_UPLOAD_URL=
+REPORT_LIMIT=
+CONSTRAIN_VERIFY=
+REPORT_RESERVED_DAYS=
+CROSS_DEV=
+CROSS_WEBSITE=
+CHARGE_TYPE=
+ZONEID=
+OLCHG_SERVER=
+OLCHG_PORT=
+OLCHG_TIMEOUT=
+OLCHG_POLLING_INTERVAL=
+
+SELFCHECK_TIME=
+AUTO_TIMESYNC=
+TIME_SERVER=
+
+LOGLEVEL=
+
+UKR_SIGN=0
+CA_REGADDR=
+CADB_IP=
+CADB_PORT=
+CADB_USER=
+CADB_PASSWD=
+CADB_TALBENAME=
+
+lineindex=0
+
+FLAG=
+
+dpkg -l curl > /dev/null 2>&1
+if [ `echo $?` -eq 0 ];then
+	EN_CURL=1
+else
+	EN_CURL=0
+	echo "CURL包缺失，配置中将无法检测输入URL的可达性，请确保输入URL地址的正确性！"
+fi
+
+IFS=$'\n'
+
+echo "请选择配置方式："
+echo -e "\t1) 手动配置"
+echo -e "\t2) 从旧配置文件自动获取"
+echo -e "\t3) 退出"
+read conftype
+if [ ! -z "$conftype" ] && [ "$conftype" == "2" ];then
+	echo -e "请输入旧配置文件路径（默认自动备份路径为/etc/CCIS/CCISServer.conf.old，输入回车将自动采用该文件）：\c"
+	read oldcfile
+	if [ -z "$oldcfile" ];then
+		oldcfile="/etc/CCIS/CCISServer.conf.old"
+	fi
+	while [ ! -f "$oldcfile" ];do
+		echo -e "文件或路径不存在！请重新输入：\c"
+		read oldcfile
+	done
+	echo "正在从 $oldcfile 中获取原配置项值..."
+	undolist=
+	for line in `cat -A $ServerConfFile`;do
+		lineindex=`expr $lineindex + 1`
+		content=$line
+		name=`echo "$line" | awk -F '=' '{print $1}'`
+
+		startch=`echo "$line" | cut -c 1-1`
+		if [ "$line" != "$" ] && [ "$startch" != "#" ] && [ "$startch" != "[" ] ;then
+			oldline=`grep $name $oldcfile`
+			if [ x"$oldline" == x"" ];then
+				undolist="${undolist};${name}"
+			else
+				oldvalue=`echo $oldline | cut -d = -f 2-`
+				content="$name=$oldvalue"
+				echo -e "找到配置项：${name}=${oldvalue}\t已同步..."
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		fi
+	done
+	OLD_IFS=$IFS
+	IFS=";"
+	array=($undolist)
+	IFS=$OLD_IFS
+	
+	undonum=${#array[@]}
+	undonum=`expr $undonum - 1`
+	if [ $undonum -gt 0 ];then
+		echo "新配置文件中增加了${undonum}项配置项："
+		for item in ${array[@]};do
+			echo `grep -n $item $ServerConfFile`
+		done
+		echo "以上新增配置项已保留默认值，如需更改，请再次执行该脚本并进入手动配置模式"
+	else
+		echo "原配置已全部同步完成！"
+	fi
+elif [ ! -z "$conftype" ] && [ $conftype -eq 3 ];then
+	exit
+else
+for line in `cat -A $ServerConfFile`;do
+	lineindex=`expr $lineindex + 1`
+	content=$line
+	name=`echo "$line" | awk -F '=' '{print $1}'`
+	value=`echo "$line" | awk -F '=' '{print $2}'`
+	case $name in
+		"PROCESS")
+			echo -e "请选择要开启的业务进程数量(默认为8):\c"
+			read PROCESSNUM
+			if [ ! -z "$PROCESSNUM" ];then
+				value=$PROCESSNUM
+			else
+				PROCESSNUM=8
+				value=$PROCESSNUM
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;	
+		"DATA_PATH")
+			echo -e "请输入本地文件存储根路径（如/root /home/kylin /data等，若需保持原样，可不输入）:\c"
+			read DATA_PATH
+			if [ ! -z "$DATA_PATH" ];then
+				test -d $DATA_PATH
+				while [ `echo $?` -ne 0 ];do
+					echo -e "${DATA_PATH} 不存在或者不是一个目录，是否需要自动创建？(y确定/n取消/r重新输入)\c"
+					read FLAG
+					while [ -z "$FLAG" ] || [ "$FLAG" != "y" -a "$FLAG" != "n" -a "$FLAG" != "r" ];do
+						echo -e "${DATA_PATH} 不存在或者不是一个目录，是否需要自动创建？(y确定/n取消/r重新输入)\c"
+						read FLAG
+					done
+					if [ "$FLAG" == "y" ];then
+						echo -e "正在创建${DATA_PATH}.....................\c"
+						mkdir -p $DATA_PATH > /dev/null 2&>1
+						if [ `echo $?` -ne 0 ];then
+							echo "失败"
+							echo "${DATA_PATH}创建失败，请联系相关技术人员解决"
+							exit
+						fi
+						echo "成功"
+					elif [ "$FLAG" == "n" ];then
+						echo "${DATA_PATH}目录不存在，请稍后手动创建"
+					else
+						echo -e "请输入本地文件存储根路径（如/root /home/kylin /data等）:\c"
+						read DATA_PATH
+						while [ -z "$DATA_PATH" ];do
+							echo -e "请输入本地文件存储根路径（如/root /home/kylin /data等）:\c"
+							read DATA_PATH
+						done
+						test -d $DATA_PATH
+					fi
+				done
+				value=$DATA_PATH
+				content="$name=$value"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"AUTO_RESTART")
+			echo -e "是否在日常自检时自动重启业务进程？(y/n)(默认为y):\c"
+			read AUTO_RESTART
+			if [ ! -z "$AUTO_RESTART" ];then
+				if [ "$AUTO_RESTART" = "n" ] || [ "$AUTO_RESTART" = "N" ];then
+					AUTO_RESTART=0
+				else
+					AUTO_RESTART=1
+				fi
+			else
+				AUTO_RESTART=1
+			fi
+			value=$AUTO_RESTART
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			
+		;;
+		"LINK_TIMEOUT_S")
+			echo -e "请设置征信连接超时时间(若需保持默认值可不输入。单位：秒)：\c"
+			read LINK_TIMEOUT
+			if [ ! -z "$LINK_TIMEOUT" ];then
+				if [ $LINK_TIMEOUT -lt 1 ];then
+					LINKE_TIMEOUT=1
+					echo "超时时间设置有误，已自动修改为1秒"
+				fi
+				value=$LINK_TIMEOUT
+				content="$name=$value"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"SERVERPORT")
+			echo -e "请选择监听端口号(默认监听80端口):\c"
+			read SERVERPORT
+			if [ ! -z "$SERVERPORT" ];then
+				value=$SERVERPORT
+			else
+				SERVERPORT=80
+				value=$SERVERPORT
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"MYSQL_IP")
+			echo -e "请输入数据库IP地址(若需保持原样可不输入。IP地址或域名):\c"
+			read MYSQL_IP
+			if [ ! -z "$MYSQL_IP" ];then
+				value=$MYSQL_IP
+				content="$name=$value"
+				sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+			fi
+		;;
+		"MYSQL_PORT")
+			echo -e "请输入数据库端口号(若需保持原样可不输入):\c"
+			read MYSQL_PORT
+			if [ ! -z "$MYSQL_PORT" ];then
+				value=$MYSQL_PORT
+				content="$name=$value"
+				sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+			fi
+		;;
+		"MYSQL_USER")
+			echo -e "请输入数据库用户名(输入明文，将自动以密文形式保存，若需保持原样可不输入):\c"
+			read MYSQL_USER
+			if [ ! -z "$MYSQL_USER" ];then
+				value=`echo -e "$MYSQL_USER\c" | base64`
+				content="$name=$value"
+				sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+			fi
+		;;
+		"MYSQL_PASSWD")
+			echo -e "请输入数据库密码(输入明文，将自动以密文形式保存，若需保持原样可不输入):\c"
+			read MYSQL_PASSWD
+			if [ ! -z "$MYSQL_PASSWD" ];then
+				value=`echo -e "$MYSQL_PASSWD\c" | base64`
+				content="$name=$value"
+				sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+			fi
+		;;
+		"MYSQL_DATABASE")
+			echo -e "请输入数据库库名(若需保持原样可不输入):\c"
+			read MYSQL_DB
+			if [ ! -z "$MYSQL_DB" ];then
+				value=$MYSQL_DB
+				content="$name=$value"
+				sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+			fi
+		;;
+		"SSL_CONNECT")
+			echo -e "是否开启数据库SSL链接？(y/n)(默认为不开启)\c"
+			read SSL_CONNECT
+			if [ "$SSL_CONNECT" = "y" ] || [ "$SSL_CONNECT" = "Y" ];then
+				let value=1
+				SSL_CONNECT=1
+			else
+				SSL_CONNECT=0
+				value=$SSL_CONNECT
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"CACERT")
+			echo -e "请输入根证书路径(不输入将采用默认路径$DEFAULT_CACERT):\c"
+			read CACERT
+			if [ ! -z "$CACERT" ];then
+				value=$CACERT
+			else
+				value=$DEFAULT_CACERT
+				CACERT=$DEFAULT_CACERT
+			fi
+			echo -e "正在检测根证书属性...........\c"
+			while [ ! -f "$CACERT" ];do
+				echo "错误！"
+				echo -e "请重新指定根证书路径:\c"
+				read CACERT
+				echo -e "正在检测根证书属性........\c"
+			done
+			echo "成功"
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"SERVER_CERT")
+			echo -e "请输入服务器证书路径(不输入将采用默认路径$DEFAULT_SERVERCERT):\c"
+			read SERVERCERT
+			if [ ! -z "$SERVERCERT" ];then
+				value=$SERVERCERT
+			else
+				value=$DEFAULT_SERVERCERT
+				SERVERCERT=$DEFAULT_SERVERCERT
+			fi
+			echo -e "正在检测服务器证书属性...........\c"
+			while [ ! -f "$SERVERCERT" ];do
+				echo "错误！"
+				echo -e "请重新指定服务器证书路径:\c"
+				read SERVERCERT
+				echo -e "正在检测服务器证书属性........\c"
+			done
+			echo "成功"
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"SERVER_PRIVATE_KEY")
+			echo -e "请输入服务器私钥路径(不输入将采用默认路径$DEFAULT_SERVERPK):\c"
+			read SERVERPK
+			if [ ! -z "$SERVERPK" ];then
+				value=$SERVERPK
+			else
+				value=$DEFAULT_SERVERPK
+				SERVERPK=$DEFAULT_SERVERPK
+			fi
+			echo -e "正在检测服务器私钥属性...........\c"
+			while [ ! -f "$SERVERPK" ];do
+				echo "错误！"
+				echo -e "请重新指定服务器私钥路径:\c"
+				read SERVERPK
+				echo -e "正在检测服务器私钥属性........\c"
+			done
+			echo "成功"
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"CAHOST")
+			echo -e "请配置CA服务器地址(如需保持原有地址可不填写。地址格式:http://ip:port):\c"
+			read CAHOST
+			if [ ! -z "$CAHOST" ];then
+				if [ ${EN_CURL} -eq 1 ];then
+					echo -e "正在验证${CAHOST}的连通性，请稍后.......\c"
+					curl $CAHOST>/dev/null 2>&1
+					while [ `echo $?` -ne 0 ];do
+						echo "不可达"
+						echo -e "请重新输入地址:\c"
+						read CAHOST
+						echo -e "正在验证${CAHOST}的连通性，请稍后.......\c"
+						curl $CAHOST>/dev/null 2>&1
+					done
+					echo "成功"
+				fi
+				value=$CAHOST
+				content="$name=$value/"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"DUPLICATE_LOGIN_ACTION")
+			echo -e "请选择当设备重复登陆时的操作（0禁止登陆，1强制登陆）（默认禁止设备登陆）：\c"
+			read DUPLICATE_LOGIN_ACTION
+			if [ ! -z "${DUPLICATE_LOGIN_ACTION}" ];then
+				while [ ${DUPLICATE_LOGIN_ACTION} -ne 0 ] && [ ${DUPLICATE_LOGIN_ACTION} -ne 1 ];do
+					echo -e "无效的值。请重新输入：\c"
+					read DUPLICATE_LOGIN_ACTION
+				done
+			else
+				DUPLICATE_LOGIN_ACTION=0
+			fi
+			value=${DUPLICATE_LOGIN_ACTION}
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"ZX_NORMAL_URL")
+			echo -e "请配置征信网站地址(非代理网站地址，若该服务器无需征信地址，可不填写。地址格式:http://ip:port/options):\c"
+			read ZX_NORMAL_URL
+			if [ ! -z "$ZX_NORMAL_URL" ];then
+				if [ ${EN_CURL} -eq 1 ];then
+					echo -e "正在验证${ZX_NORMAL_URL}的连通性，请稍后......\c"
+					curl $ZX_NORMAL_URL>/dev/null 2>&1
+					while [ `echo $?` -ne 0 ];do
+						echo "不可达"
+						echo -e "请重新输入地址:\c"
+						read ZX_NORMAL_URL
+						echo -e "正在验证${ZX_NORMAL_URL}的连通性，请稍后......\c"
+						curl $ZX_NORMAL_URL>/dev/null 2>&1
+					done
+					echo "成功"
+				fi
+				value=$ZX_NORMAL_URL
+				content="$name=$value/"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"ZX_AGENT_URL")
+			echo -e "请配置代理服务器地址(若该服务器无需被代理，可不填写。地址格式:http://ip:port/options):\c"
+			read ZX_AGENT_URL
+			if [ ! -z "$ZX_AGENT_URL" ];then
+				if [ ${EN_CURL} -eq 1 ];then
+					echo -e "正在验证${ZX_AGENT_URL}的连通性，请稍后......\c"
+					curl $ZX_AGENT_URL>/dev/null 2>&1
+					while [ `echo $?` -ne 0 ];do
+						echo "不可达"
+						echo -e "请重新输入地址:\c"
+						read ZX_AGENT_URL
+						echo -e "正在验证${ZX_AGENT_URL}的连通性，请稍后......\c"
+						curl $ZX_AGENT_URL>/dev/null 2>&1
+					done
+					echo "成功"
+				fi
+				content="$name=$value/"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"AUTO_UPLOAD")
+			echo -e "是否开启自动上传功能？(y/n)(默认不开启)\c"
+			read AUTO_UPLOAD
+			if [ "$AUTO_UPLOAD" = "y" ] || [ "$AUTO_UPLOAD" = "Y" ];then
+				AUTO_UPLOAD=1
+				value=$AUTO_UPLOAD
+			else
+				AUTO_UPLOAD=0
+				value=$AUTO_UPLOAD
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"PIC_UPLOAD_URL")
+			if [ $AUTO_UPLOAD -eq 1 ];then
+				echo -e "请输入照片上传地址(若需保持原有地址，可不输入。地址格式http://ip:port/options)：\c"
+				read PIC_UPLOAD_URL
+				if [ ! -z "$PIC_UPLOAD_URL" ];then
+					if [ ${EN_CURL} -eq 1 ];then
+						echo -e "正在验证${PIC_UPLOAD_URL}的连通性，请稍后......\c"
+						curl $PIC_UPLOAD_URL>/dev/null 2>&1
+						while [ `echo $?` -ne 0 ];do
+							echo "不可达"
+							echo -e "请重新输入地址:\c"
+							read PIC_UPLOAD_URL
+							echo -e "正在验证${PIC_UPLOAD_URL}的连通性，请稍后......\c"
+							curl $PIC_UPLOAD_URL>/dev/null 2>&1
+						done
+						echo "成功"
+					fi
+					value=$PIC_UPLOAD_URL
+					content="$name=$value/"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"LOG_UPLOAD_URL")
+			if [ $AUTO_UPLOAD -eq 1 ];then
+				echo -e "请输入查询记录上传地址(若需保持原有地址，可不输入。地址格式http://ip:port/options):\c"
+				read LOG_UPLOAD_URL
+				if [ ! -z "$LOG_UPLOAD_URL" ];then
+					if [ ${EN_CURL} -eq 1 ];then
+						echo -e "正在验证${LOG_UPLOAD_URL}的连通性，请稍后......\c"
+						curl $LOG_UPLOAD_URL>/dev/null 2>&1
+						while [ `echo $?` -ne 0 ];do
+							echo "不可达"
+							echo -e "请重新输入地址:\c"
+							read LOG_UPLOAD_URL
+							echo -e "正在验证${LOG_UPLOAD_URL}的连通性，请稍后......\c"
+							curl $LOG_UPLOAD_URL>/dev/null 2>&1
+						done
+						echo "成功"
+					fi
+					value=$LOG_UPLOAD_URL
+					content="$name=$value/"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"REPORT_LIMIT")
+			echo -e "请输入允许打印的报告类型(1.仅简版;2.仅详版;3.详简均可)：\c"
+			read REPORT_LIMIT
+			if [ ! -z "$REPORT_LIMIT" ];then
+				while [ $REPORT_LIMIT -gt 3 ] || [ $REPORT_LIMIT -lt 1 ];do
+					echo -e "参数不正确，允许范围：1~3，请重新输入：\c"
+					read REPORT_LIMIT
+				done
+				value=$REPORT_LIMIT
+				content="$name=$value"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"CONSTRAIN_VERIFY")
+			echo -e "是否开启公安部强制认证？(y/n)\c"
+			read CONSTRAIN_VERIFY
+			if [ ! -z "$CONSTRAIN_VERIFY" ];then
+				if [ "$CONSTRAIN_VERIFY" = "y" ] || [ "$CONSTRAIN_VERIFY" = "Y" ];then
+					value=1
+				else
+					value=0
+				fi
+				content="$name=$value"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"REPORT_RESERVED_DAYS")
+			echo -e "请输入未打印报告保留期(单位：天)：\c"
+			read REPORT_RESERVED_DAYS
+			if [ ! -z "$REPORT_RESERVED_DAYS" ];then
+				while [ ${REPORT_RESERVED_DAYS} -lt 0 ];do
+					echo -e "参数不正确，允许范围：0~999，请重新输入：\c"
+					read REPORT_RESERVED_DAYS
+				done
+				value=$REPORT_RESERVED_DAYS
+				content="$name=$value"
+				sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+			fi
+		;;
+		"CROSS_DEV")
+			echo -e "是否允许跨设备共享收费记录(默认允许)？(y/n)\c"
+			read CROSS_DEV
+			if [ ! -z "${CROSS_DEV}" ];then
+				if [ "${CROSS_DEV}" = "y" ] || [ "${CROSS_DEV}" = "Y" ];then
+					CROSS_DEV=1
+				else
+					CROSS_DEV=0
+				fi
+			else
+				CROSS_DEV=1
+			fi
+			value=${CROSS_DEV}
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"CROSS_WEBSITE")
+			if [ ${CROSS_DEV} -eq 1 ];then
+				echo -e "是否允许跨网点共享收费记录(默认允许)？(y/n)\c"
+				read CROSS_WEBSITE
+				if [ ! -z "${CROSS_WEBSITE}" ];then
+					if [ "${CROSS_WEBSITE}" = "y" ] || [ "${CROSS_WEBSITE}" = "Y" ];then
+						CROSS_WEBSITE=1
+					else
+						CROSS_WEBSITE=0
+					fi
+				else
+					CROSS_WEBSITE=1
+				fi
+			else
+				CROSS_WEBSITE=0
+			fi
+			value=${CROSS_WEBSITE}
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"CHARGE_TYPE")
+			echo -e "请选择支持的收费方式(0-禁止收费/1-现金支付/2-移动支付/3-无限制)：\c"
+			read CHARGE_TYPE
+			while [ -z "${CHARGE_TYPE}" ] || [ ${CHARGE_TYPE} -lt 0 ] || [ ${CHARGE_TYPE} -gt 3 ];do
+				echo -e "参数不正确，请重新输入：\c"
+				read CHARGE_TYPE
+			done
+			value=${CHARGE_TYPE}
+			content="$name=$value"
+			sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+		;;
+		"ZONEID")
+			if [ ${CHARGE_TYPE} -ge 2 ];then
+				echo -e "请输入服务器所在的区号：\c"
+				read ZONEID
+				if [ ! -z "${ZONEID}" ];then
+					value=${ZONEID}
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"OLCHG_SERVER")
+			if [ ${CHARGE_TYPE} -ge 2 ];then
+				echo -e "请输入收费服务器IP地址：\c"
+				read OLCHG_SERVER
+				if [ ! -z "${OLCHG_SERVER}" ];then
+					value=${OLCHG_SERVER}
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"OLCHG_PORT")
+			if [ ${CHARGE_TYPE} -ge 2 ];then
+				echo -e "请输入收费服务器端口号：\c"
+				read OLCHG_PORT
+				if [ ! -z "${OLCHG_PORT}" ];then
+					value=${OLCHG_PORT}
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"OLCHG_TIMEOUT")
+			if [ ${CHARGE_TYPE} -ge 2 ];then
+				echo -e "请输入支付等待超时时间(建议值：60~90)(单位：秒)：\c"
+				read OLCHG_TIMEOUT
+				if [ ! -z "${OLCHG_TIMEOUT}" ];then
+					value=${OLCHG_TIMEOUT}
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"OLCHG_POLLING_INTERVAL")
+			if [ ${CHARGE_TYPE} -ge 2 ];then
+				echo -e "请输入支付结果轮询间隔(建议值：2~3)(单位：秒)：\c"
+				read OLCHG_POLLING_INTERVAL
+				if [ ! -z "${OLCHG_POLLING_INTERVAL}" ];then
+					value=${OLCHG_POLLING_INTERVAL}
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"HOUR")
+			echo -e "请输入每日自检时间(24小时制，仅允许输入小时，范围1~24，默认为24)：\c"
+			read SELFCHECK_TIME
+			if [ ! -z "$SELFCHECK_TIME" ];then
+				value=$SELFCHECK_TIME
+			else
+				SELFCHECK_TIME=24
+				value=$SELFCHECK_TIME
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"AUTO_TIMESYNC")
+			echo -e "是否开启服务器时间同步？(y/n)(默认不开启)\c"
+			read AUTO_TIMESYNC
+			if [ "$AUTO_TIMESYNC" = "y" ] || [ "$AUTO_TIMESYNC" = "Y" ];then
+				AUTO_TIMESYNC=1
+			else
+				AUTO_TIMESYNC=0
+			fi
+			value=$AUTO_TIMESYNC
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"TIMESYNC_SERVER")
+			if [ $AUTO_TIMESYNC -eq 1 ];then
+				echo -e "请输入时间同步服务器地址(若需保持原样可不输入。地址格式http://ip:port)：\c"
+				read TIME_SERVER
+				if [ ! -z "$TIME_SERVER" ];then
+					if [ ${EN_CURL} -eq 1 ];then
+						echo -e "正在验证${TIME_SERVER}的连通性，请稍后......\c"
+						curl $TIME_SERVER>/dev/null 2>&1
+						while [ `echo $?` -ne 0 ];do
+							echo "不可达"
+							echo -e "请重新输入地址:\c"
+							read TIME_SERVER
+							echo -e "正在验证${TIME_SERVER}的连通性，请稍后......\c"
+							curl $TIME_SERVER>/dev/null 2>&1
+						done
+						echo "成功"
+					fi
+					value=$TIME_SERVER
+					content="$name=$value"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"LEVEL")
+			echo -e "请输入日志记录等级(范围0~7，数字越小等级越高。将会记录当前输入的等级及等级更高的日志，默认等级为6):\c"
+			read LOGLEVEL
+			if [ ! -z "$LOGLEVEL" ];then
+				value=$LOGLEVEL
+			else
+				LOGLEVEL=6
+				value=$LOGLEVEL
+			fi
+			content="$name=$value"
+			sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+		;;
+		"[UKEYREG]$")
+			echo -e "是否开启Ukey自动注册功能？(y/n)(默认不开启):\c"
+			read UKR_SIGN
+			if [ "$UKR_SIGN" = "y" ] || [ "$UKR_SIGN" = "Y" ];then
+				UKR_SIGN=1
+			else
+				UKR_SIGN=0
+			fi
+		;;
+		"CA_REGADDR")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA中心提供的证书注册URL(例:http://[IP]:[port]/cgi-bin/pki/pub/pki)：\c"
+				read CA_REGADDR
+				if [ ! -z "$CA_REGADDR" ];then
+					if [ ${EN_CURL} -eq 1 ];then
+						echo -e "正在验证${CA_REGADDR}的连通性，请稍后......\c"
+						curl $CA_REGADDR>/dev/null 2>&1
+						while [ `echo $?` -ne 0 ];do
+							echo "不可达"
+							echo -e "请重新输入地址:\c"
+							read CA_REGADDR
+							echo -e "正在验证${CA_REGADDR}的连通性，请稍后......\c"
+							curl $CA_REGADDR>/dev/null 2>&1
+						done
+						echo "成功"
+					fi
+					value=$CA_REGADDR
+					content="$name=$value/"
+					sed "${lineindex}s#^.*#$content#g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"CADB_IP")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA数据库IP地址：\c"
+				read CADB_IP
+				if [ ! -z "$CADB_IP" ];then
+					value=$CADB_IP
+					content="$name=$value"
+					sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"CADB_PORT")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA数据库端口：\c"
+				read CADB_PORT
+				if [ ! -z "$CADB_PORT" ];then
+					value=$CADB_PORT
+					content="$name=$value"
+					sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"CADB_USER")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA数据库用户名(明文输入，将自动转换为密文存储)：\c"
+				read CADB_USER
+				if [ ! -z "$CADB_USER" ];then
+					value=`echo -e "$CADB_USER\c" | base64`
+					content="$name=$value"
+					sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"CADB_PASSWD")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA数据库密码(明文输入，将自动转换为密文存储)：\c"
+				read CADB_PASSWD
+				if [ ! -z "$CADB_PASSWD" ];then
+					value=`echo -e "$CADB_PASSWD\c" | base64`
+					content="$name=$value"
+					sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+				fi
+			fi
+		;;
+		"CADB_TALBENAME")
+			if [ $UKR_SIGN -ne 0 ];then
+				echo -e "请输入CA数据库库名：\c"
+				read CADB_TABLENAME
+				if [ ! -z "$CADB_TABLENAME" ];then
+					value=$CADB_TABLENAME
+					content="$name=$value"
+					sed "${lineindex}s/^.*$/$content/g" -i $ServerConfFile
+				fi
+			fi
+		;;
+	esac
+done
+fi
+
+echo "服务器配置已完成！"

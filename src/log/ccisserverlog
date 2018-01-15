@@ -1,0 +1,9 @@
+/var/log/ccisserver.log{
+	daily
+	missingok
+	compress
+	delaycompress
+	dateext
+	notifempty
+	create 777 root adm
+}
